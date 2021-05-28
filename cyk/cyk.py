@@ -1,5 +1,6 @@
 from functools import singledispatch
 import numpy as np
+from numpy.core.fromnumeric import var
 class GHC:
     def __init__(self,grammaire):
         self.Sigma=grammaire["Sigma"]
@@ -17,7 +18,10 @@ class GHC:
         acceptedAlphabet=self.Sigma.union(grammaire["V"])
         for Var in self.P:
             destinations={word if GHC.isIn(word,acceptedAlphabet) else 1 for word in self.P[Var]}
-            destinations.remove(1)
+            try :
+                destinations.remove(1)
+            except KeyError:
+                pass
             if (len(destinations)):
                 grammaire["P"][Var]=destinations
         return GHC(grammaire)
@@ -63,18 +67,40 @@ class GHC:
                     rulesfromW0=rulesfromW0.replace(a,'')
                 newAccesibles=set(list(rulesfromW0))
             W1=W1.union(newAccesibles)
-        return W1    
+        return W1
+    def epsilonGeneratorVariables(self):
+        U0={Var if "e" in self.P[Var] else 1 for Var in self.P}
+        try:
+            U0.remove(1)
+        except KeyError:
+            pass
+        U1=set()
+        while U0!=U1:
+            U0=U1 if U1!=set() else U0
+            U1=U0.union({Var if any(set(map(lambda word:GHC.isIn(word,U0),self.P[Var]))) else 1 for Var in self.P})
+            try:
+                U1.remove(1)
+            except KeyError:
+                pass
+        return U1
+    def substitutionByEpsilon(self,Uepsilon):
+        translationTable={ord(U):None for U in Uepsilon}
+        return {Var:{word.translate(translationTable) for word in self.P[Var]} for Var in self.P}
+    def cleaner(self):
+        return self.substitutionByEpsilon(self.epsilonGeneratorVariables())
 grammaire={
 "Sigma":{"a","b"},
 "V":{"S","X","C","D"},
 "P":{
-    "S":{"ab","aSb","X"},
-    "X":{"aXb","abC"},
-    "C":{"D"}
+    "S":{"Sa","e"},
+    "X":{"Ce","aba"},
+    "C":{"e"}
 },
 "S0":"S"
 }
 G=GHC(grammaire)
-print("generators: ",G.generatorVariables())
-print("Accecibles: ",G.accessiblesVariables())
-print("new",G.reduction())
+#print("generators: ",G.generatorVariables())
+#print("Accecibles: ",G.accessiblesVariables())
+#print("new",G.reduction())
+print("epsilon generator",G.epsilonGeneratorVariables())
+print("term",G.cleaner())
