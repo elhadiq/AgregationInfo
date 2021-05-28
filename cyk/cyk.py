@@ -9,22 +9,7 @@ class GHC:
         self.S0=grammaire["S0"]
     def __repr__(self) -> str:
         return "Sigma: "+str(self.Sigma)+"\nV: "+str(self.V)+"\nP: "+str(self.P)
-    def reduction(self):
-        grammaire=dict()
-        grammaire["Sigma"]=self.Sigma
-        grammaire["S0"]=self.S0
-        grammaire["V"]=self.accessiblesVariables().intersection(self.generatorVariables())
-        grammaire["P"]=dict()
-        acceptedAlphabet=self.Sigma.union(grammaire["V"])
-        for Var in self.P:
-            destinations={word if GHC.isIn(word,acceptedAlphabet) else 1 for word in self.P[Var]}
-            try :
-                destinations.remove(1)
-            except KeyError:
-                pass
-            if (len(destinations)):
-                grammaire["P"][Var]=destinations
-        return GHC(grammaire)
+    
     def generatorVariables(self):
         U0=self.Sigma
         U1=set()
@@ -84,17 +69,54 @@ class GHC:
                 pass
         return U1
     def substitutionByEpsilon(self,Uepsilon):
-        translationTable={ord(U):None for U in Uepsilon}
-        return {Var:{word.translate(translationTable) for word in self.P[Var]} for Var in self.P}
+        #translationTable={ord(U):None for U in Uepsilon}
+        #translationTable.update({ord("e"):None})
+
+        return {Var:[{word.replace(U,"") for U in Uepsilon} for word in self.P[Var]] for Var in self.P}
     def cleaner(self):
-        return self.substitutionByEpsilon(self.epsilonGeneratorVariables())
+        subTable= self.substitutionByEpsilon(self.epsilonGeneratorVariables())
+        newPtable={V:(self.P[V].union(subTable[V])).difference({"e",""}) for V in self.P}
+        return newPtable
+    def reduction(self):
+        grammaire=dict()
+        grammaire["Sigma"]=self.Sigma
+        grammaire["S0"]=self.S0
+        grammaire["V"]=self.accessiblesVariables().intersection(self.generatorVariables())
+        grammaire["P"]=dict()
+        acceptedAlphabet=self.Sigma.union(grammaire["V"])
+        for Var in self.P:
+            destinations={word if GHC.isIn(word,acceptedAlphabet) else 1 for word in self.P[Var]}
+            try :
+                destinations.remove(1)
+            except KeyError:
+                pass
+            if (len(destinations)):
+                grammaire["P"][Var]=destinations
+        return GHCReduced(grammaire)
+    
+    @staticmethod
+    def substitute(word,toSub,done=""):
+        if (not len(word)):
+            return {done}
+        if (word[0] not in toSub):
+            return GHC.substitute(word[1:],toSub,done+word[0])
+        return GHC.substitute(word[1:],toSub,done+word[0]).union(GHC.substitute(word[1:],toSub,done))
+
+class GHCReduced(GHC):
+    def __init__(self, grammaire):
+        super().__init__(grammaire)
+class GHCProper(GHC):
+    def __init__(self, grammaire):
+        super().__init__(grammaire)
+class GHCChomsky(GHCReduced,GHCProper):
+    def __init__(self, grammaire):
+        super().__init__(grammaire)
 grammaire={
 "Sigma":{"a","b"},
 "V":{"S","X","C","D"},
 "P":{
-    "S":{"Sa","e"},
-    "X":{"Ce","aba"},
-    "C":{"e"}
+    "S":{"aSbS","e"},
+    "X":{"e","S"}
 },
 "S0":"S"
 }
@@ -102,5 +124,6 @@ G=GHC(grammaire)
 #print("generators: ",G.generatorVariables())
 #print("Accecibles: ",G.accessiblesVariables())
 #print("new",G.reduction())
-print("epsilon generator",G.epsilonGeneratorVariables())
-print("term",G.cleaner())
+#print("epsilon generator",G.epsilonGeneratorVariables())
+#print("term",G.cleaner())
+print(GHC.substitute("aSbS","S"))
