@@ -1,6 +1,4 @@
-from functools import singledispatch
 import numpy as np
-from numpy.core.fromnumeric import var
 class GHC:
     def __init__(self,grammaire):
         self.Sigma=grammaire["Sigma"]
@@ -68,12 +66,7 @@ class GHC:
             except KeyError:
                 pass
         return U1
-    def substitutionByEpsilon(self,Uepsilon):
-        return {Var:GHC.unionReducer( [GHC.substitute(word,Uepsilon) for word in self.P[Var]]) for Var in self.P}
-    def cleaner(self):
-        subTable= self.substitutionByEpsilon(self.epsilonGeneratorVariables())
-        newPtable={V:(self.P[V].union(subTable[V])).difference({"e",""}) for V in self.P}
-        return newPtable
+
     def reduction(self):
         grammaire=dict()
         grammaire["Sigma"]=self.Sigma
@@ -126,6 +119,14 @@ class GHC:
     def productionOf(self,Var,done=set()):
         done.add(Var)
         return self.P[Var].difference(self.V).union(GHC.unionReducer([self.productionOf(D,done) for D in self.P[Var].intersection(self.V).difference(done)]))
+    def substitutionByEpsilon(self,Uepsilon):
+        return {Var:GHC.unionReducer( [GHC.substitute(word,Uepsilon) for word in self.P[Var]]) for Var in self.P}
+    def cleaner(self):
+        
+        subTable= self.substitutionByEpsilon(self.epsilonGeneratorVariables())
+        newPtable={V:(self.P[V].union(subTable[V])).difference({"e",""}) for V in self.P}
+
+        return newPtable
 class GHCReduced(GHC):
     def __init__(self, grammaire):
         super().__init__(grammaire)
