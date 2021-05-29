@@ -1,3 +1,4 @@
 {
-    "zenMode.hideStatusBar": false
+    "zenMode.hideStatusBar": false,
+    "jupyter.jupyterServerType": "local"
 }
