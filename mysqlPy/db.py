@@ -9,13 +9,13 @@ def se_connecter():
     auth_plugin='mysql_native_password'
     )
     return connection
-def creationDb(connection,nameDb):        
+def creationDb(connection):        
     cursor=connection.cursor()
-    cursor.execute("CREATE DATABASE IF NOT EXISTS %s;"%(nameDb))
-    cursor.execute("use %s"%(nameDb))
+    cursor.execute("CREATE DATABASE IF NOT EXISTS TP_SQL;")
+    cursor.execute("use TP_SQL")
     cursor.close()
 
-def creationTables(connection,nameTable):
+def creationTables(connection):
     cursor=connection.cursor()
     cursor.execute("""create table if not exists dept(
         ND int primary key, nom varchar(20), ville varchar(20))
