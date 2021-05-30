@@ -1,12 +1,21 @@
 import numpy as np
 class GHC:
+    __name__="GHC"
+
     def __init__(self,grammaire):
-        self.Sigma=grammaire["Sigma"]
+        self.Sigma=set(grammaire["Sigma"])
         self.P=grammaire["P"]
-        self.V=grammaire["V"]
+        self.V=set(grammaire["V"])
         self.S0=grammaire["S0"]
+
+    def copy(self,ghc):
+        self.Sigma=ghc.Sigma
+        self.V=ghc.V
+        self.P=ghc.P
+        self.S0=ghc.S0
+
     def __repr__(self) -> str:
-        return "Sigma: "+str(self.Sigma)+"\nV: "+str(self.V)+"\nP: "+str(self.P)
+        return str(self.__name__)+"\nSigma: "+str(self.Sigma)+"\nV: "+str(self.V)+"\nP: "+str(self.P)
 
     def generatorVariables(self):
         U0=self.Sigma
@@ -19,6 +28,8 @@ class GHC:
             U1=U0.union(set(Vars[filter]))
         newV=U1.intersection(self.V)
         return newV
+
+    
     @staticmethod
     def isIn(w,Alphabet):
         #w : word or character, or list of words 
@@ -26,12 +37,16 @@ class GHC:
         #if w is a single word : each character will be considred separently
         #return true if the word is in Alphabet false otherwise
         return all(list(map(lambda x:x in Alphabet,set(w))))
+
+
     @staticmethod
     def unionReducer(listOfSets):
         u0=set()
         for u in listOfSets:
             u0=u0.union(u)
         return u0
+
+
     def accessiblesVariables(self):
         W0={self.S0}
         W1=set()
@@ -51,6 +66,8 @@ class GHC:
                 newAccesibles=set(list(rulesfromW0))
             W1=W1.union(newAccesibles)
         return W1
+
+
     def epsilonGeneratorVariables(self):
         U0={Var if "e" in self.P[Var] else 1 for Var in self.P}
         try:
@@ -67,23 +84,6 @@ class GHC:
                 pass
         return U1
 
-    def reduction(self):
-        grammaire=dict()
-        grammaire["Sigma"]=self.Sigma
-        grammaire["S0"]=self.S0
-        grammaire["V"]=self.accessiblesVariables().intersection(self.generatorVariables())
-        grammaire["P"]=dict()
-        acceptedAlphabet=self.Sigma.union(grammaire["V"])
-        for Var in self.P:
-            destinations={word if GHC.isIn(word,acceptedAlphabet) else 1 for word in self.P[Var]}
-            try :
-                destinations.remove(1)
-            except KeyError:
-                pass
-            if (len(destinations)):
-                grammaire["P"][Var]=destinations
-        return GHCReduced(grammaire)
-    
     @staticmethod
     def substitute(word,toSub,done=""):
         if (not len(word)):
@@ -91,7 +91,9 @@ class GHC:
         if (word[0] not in toSub):
             return GHC.substitute(word[1:],toSub,done+word[0])
         return GHC.substitute(word[1:],toSub,done+word[0]).union(GHC.substitute(word[1:],toSub,done))
-    def dependeces(self):
+
+
+    def dependeceDictionary(self):
         """
         La raision de travailler sur les dependeants c'est pour savoir la variable qui a 
         le plus grand nombre de depandans en eliminant ces dependances ainsi en montant vers la
@@ -106,55 +108,110 @@ class GHC:
                     directDpendants[alpha].add(Var)
         for Var in self.P:
             allDependances[Var]=GHC.alldependants(Var,directDpendants)
+        """ removing primitives variables"""
+        for Var in list(allDependances):
+            if allDependances[Var]==set():
+                allDependances.pop(Var)
         return allDependances
+
 
     @staticmethod
     def alldependants(Var,directDependants,dependants=set()):
+        """ compute all dependants (ie Variables primitives) of a givven Var"""
         dependants.add(Var)
         newDependants=GHC.unionReducer([directDependants[D] for D in dependants]).difference(dependants)
         if(len(newDependants)!=0):
             dependants=dependants.union(newDependants)
             dependants=dependants.union(GHC.unionReducer([GHC.alldependants(V,directDependants,dependants) for V in newDependants]))
         return dependants.difference(Var)
+
+
     def productionOf(self,Var,done=set()):
+        """Compute the non Variable production of each Variable """
+        if Var not in self.P:
+            return set()
         done.add(Var)
         return self.P[Var].difference(self.V).union(GHC.unionReducer([self.productionOf(D,done) for D in self.P[Var].intersection(self.V).difference(done)]))
+    
+    
     def substitutionByEpsilon(self,Uepsilon):
+        """Return a dictionary {Var: new set substitued} for each Var in V"""
         return {Var:GHC.unionReducer( [GHC.substitute(word,Uepsilon) for word in self.P[Var]]) for Var in self.P}
-    def cleaner(self):
-        
-        subTable= self.substitutionByEpsilon(self.epsilonGeneratorVariables())
-        newPtable={V:(self.P[V].union(subTable[V])).difference({"e",""}) for V in self.P}
+    
+    def selectMAx(dictionary):
+        """ key who has the max of values and remove it"""
+        assert len(dictionary)
+        elems=list(dictionary)
+        nbElem=list(map(lambda v:len(dictionary[v]),elems))
+        imax=nbElem.index(max(nbElem))
+        Max=elems[imax]
+        dependants=dictionary.pop(Max)
+        return Max,dependants
 
-        return newPtable
 class GHCReduced(GHC):
-    def __init__(self, grammaire):
-        super().__init__(grammaire)
-class GHCProper(GHC):
-    def __init__(self, grammaire):
-        super().__init__(grammaire)
-class GHCChomsky(GHCReduced,GHCProper):
-    def __init__(self, grammaire):
-        super().__init__(grammaire)
+    __name__="GHC Reduite"
+    def __init__(self, ghc):
+        super().__init__(GHCReduced.reductionGrammar(ghc))
+    @staticmethod
+    def reductionGrammar(ghc):
+        Rgrammaire=dict()
+        Rgrammaire["Sigma"]=ghc.Sigma
+        Rgrammaire["S0"]=ghc.S0
+        Rgrammaire["V"]=ghc.accessiblesVariables().intersection(ghc.generatorVariables())
+        Rgrammaire["P"]=dict()
+        acceptedAlphabet=ghc.Sigma.union(Rgrammaire["V"])
+        """Elimination of word that containe an unccessible or an non generator variable """
+        for Var in set(ghc.P).intersection(Rgrammaire["V"]):
+            destinations={word if GHC.isIn(word,acceptedAlphabet) else 1 for word in ghc.P[Var]}
+            try :
+                destinations.remove(1)
+            except KeyError:
+                pass
+            if (len(destinations)):
+                Rgrammaire["P"][Var]=destinations
+        return Rgrammaire
+    
+
+class GHCPropre(GHC):
+    __name__="GHC Propre"
+    def __init__(self, ghc):
+        self.copy(ghc)
+        self.cleaner()
+    def cleaner(self):
+        self.removeEpsilons()
+        self.removeDirectDependency()
+
+    def removeEpsilons(self):
+        Uepsilon=self.epsilonGeneratorVariables()
+        self.P=self.substitutionByEpsilon(Uepsilon)
+        for V in Uepsilon:
+                self.P[V]=self.P[V].difference({"e",""})
+
+    def removeDirectDependency(self):
+        dependancyDictionary=self.dependeceDictionary()
+        while len(dependancyDictionary)!=0:
+            V,dependants=GHC.selectMAx(dependancyDictionary)
+            productions=self.productionOf(V)
+            for D in dependants:
+                self.P[D]=self.P[D].union(productions).difference({V})
+
+class GHCChomsky(GHCReduced,GHCPropre):
+    __name__="GHC Forme normale chomsky"
+    def __init__(self,ghc):
+        propre=GHCPropre(ghc)
+        reduite=GHCReduced(propre)
+        self.copy(reduite)
     
 grammaire={
-"Sigma":{"a","b"},
-"V":{"A","B","C","D"},
+"Sigma":"ab",
+"V":"SXCD",
 "P":{
-    "A":{"B","ab"},
-    "B":{"C","a"},
-    "C":{"D","aabD"},
-    "D":{"C"}
+    "S":{"aSb","e"},
+    "X":{"aXb","e"},
+    "C":{"D"}
 },
-"S0":"A"
+"S0":"S"
 }
 G=GHC(grammaire)
-#print("generators: ",G.generatorVariables())
-#print("Accecibles: ",G.accessiblesVariables())
-#print("new",G.reduction())
-#print("epsilon generator",G.epsilonGeneratorVariables())
-#print("term",G.cleaner())
-#print(G.cleaner())
-#print(G.dependeces())
-#print(GHC.alldependants("D",G.dependeces()))
-print(G.productionOf("A"))
+chomsky=GHCChomsky(G)
+print(chomsky)
