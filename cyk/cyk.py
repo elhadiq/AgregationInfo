@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 class GHC:
     __name__="GHC"
 
@@ -48,10 +49,10 @@ class GHC:
 
 
     def accessiblesVariables(self):
-        W0={self.S0}
-        W1=set()
+        W0=set()
+        W1={self.S0}
         while W1!=W0:
-            W0=W1 if W1!=set() else W0
+            W0=W1
             rulesfromW0="".join(GHC.unionReducer([self.P[Var] for Var in W0.intersection(list(self.P.keys()))]))
             #now we have to path in order to menimase: if the alphabet Sigma is so small than the set V we can remove 
             # the alphabet character by charater until having only reachable variables of V
@@ -63,7 +64,7 @@ class GHC:
             else:
                 for a in self.Sigma:
                     rulesfromW0=rulesfromW0.replace(a,'')
-                newAccesibles=set(list(rulesfromW0))
+                newAccesibles=set(rulesfromW0)
             W1=W1.union(newAccesibles)
         return W1
 
@@ -140,7 +141,7 @@ class GHC:
     
     def selectMAx(dictionary):
         """ key who has the max of values and remove it"""
-        assert len(dictionary)
+        assert len(dictionary),"dictionary empty"
         elems=list(dictionary)
         nbElem=list(map(lambda v:len(dictionary[v]),elems))
         imax=nbElem.index(max(nbElem))
@@ -201,17 +202,40 @@ class GHCChomsky(GHCReduced,GHCPropre):
         propre=GHCPropre(ghc)
         reduite=GHCReduced(propre)
         self.copy(reduite)
+
+    def cyk(self,word):
+        assert GHC.isIn(word,self.Sigma),"word %s not in alphabet %s"%(word,str(self.Sigma))
+        n=len(word)
+        T=pd.DataFrame([[set()]*n]*n)
+        for i,wi in enumerate(word):
+            Tii=set()
+            for A in self.V:
+                if wi in self.P[A]:
+                    Tii.add(A)
+            T[i][i]=T[i][i].union(Tii)
+        
+        for j in range(n):
+            for i in reversed(range(j)):
+                for k in range(i,j):
+                    for A in self.P:
+                        for B in T[i][k]:
+                            for C in T[k+1][j]:
+                                if B+C in self.P[A]:
+                                    T[i][j].add(A)
+        T[0][n-1]=str(T[0][n-1])+"*"
+        print("Analysis Table of the word: ",word,"\n",T.transpose())
     
 grammaire={
-"Sigma":"ab",
-"V":"SXCD",
+"Sigma":"abcd",
+"V":"ABCS",
 "P":{
-    "S":{"aSb","e"},
-    "X":{"aXb","e"},
-    "C":{"D"}
+    "S":{"a","B"},
+    "B":{"b","bC","C"},
+    "C":{"cd","c",'d'}
 },
 "S0":"S"
 }
 G=GHC(grammaire)
 chomsky=GHCChomsky(G)
 print(chomsky)
+chomsky.cyk("abcd")
