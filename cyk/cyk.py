@@ -1,3 +1,4 @@
+__author__      = "Zouhair El Hadiq"
 import numpy as np
 import pandas as pd
 class GHC:
