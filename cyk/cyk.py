@@ -1,6 +1,4 @@
-from functools import singledispatch
 import numpy as np
-from numpy.core.fromnumeric import var
 class GHC:
     def __init__(self,grammaire):
         self.Sigma=grammaire["Sigma"]
@@ -9,7 +7,7 @@ class GHC:
         self.S0=grammaire["S0"]
     def __repr__(self) -> str:
         return "Sigma: "+str(self.Sigma)+"\nV: "+str(self.V)+"\nP: "+str(self.P)
-    
+
     def generatorVariables(self):
         U0=self.Sigma
         U1=set()
@@ -68,15 +66,7 @@ class GHC:
             except KeyError:
                 pass
         return U1
-    def substitutionByEpsilon(self,Uepsilon):
-        #translationTable={ord(U):None for U in Uepsilon}
-        #translationTable.update({ord("e"):None})
 
-        return {Var:[{word.replace(U,"") for U in Uepsilon} for word in self.P[Var]] for Var in self.P}
-    def cleaner(self):
-        subTable= self.substitutionByEpsilon(self.epsilonGeneratorVariables())
-        newPtable={V:(self.P[V].union(subTable[V])).difference({"e",""}) for V in self.P}
-        return newPtable
     def reduction(self):
         grammaire=dict()
         grammaire["Sigma"]=self.Sigma
@@ -101,7 +91,42 @@ class GHC:
         if (word[0] not in toSub):
             return GHC.substitute(word[1:],toSub,done+word[0])
         return GHC.substitute(word[1:],toSub,done+word[0]).union(GHC.substitute(word[1:],toSub,done))
+    def dependeces(self):
+        """
+        La raision de travailler sur les dependeants c'est pour savoir la variable qui a 
+        le plus grand nombre de depandans en eliminant ces dependances ainsi en montant vers la
+        variable qui a un nombre moins eleve jusq'a arrivé à la variable qui un nombre de depandants le moins eleve .. et qui est probabelement 
+        depende (se derive derictement) en variables deja traité (ie ne se derive pas)
+        """
+        directDpendants={Var:set() for Var in self.V}
+        allDependances=directDpendants.copy()
+        for Var in self.P:
+            for alpha in self.P[Var]:
+                if alpha in self.V:
+                    directDpendants[alpha].add(Var)
+        for Var in self.P:
+            allDependances[Var]=GHC.alldependants(Var,directDpendants)
+        return allDependances
 
+    @staticmethod
+    def alldependants(Var,directDependants,dependants=set()):
+        dependants.add(Var)
+        newDependants=GHC.unionReducer([directDependants[D] for D in dependants]).difference(dependants)
+        if(len(newDependants)!=0):
+            dependants=dependants.union(newDependants)
+            dependants=dependants.union(GHC.unionReducer([GHC.alldependants(V,directDependants,dependants) for V in newDependants]))
+        return dependants.difference(Var)
+    def productionOf(self,Var,done=set()):
+        done.add(Var)
+        return self.P[Var].difference(self.V).union(GHC.unionReducer([self.productionOf(D,done) for D in self.P[Var].intersection(self.V).difference(done)]))
+    def substitutionByEpsilon(self,Uepsilon):
+        return {Var:GHC.unionReducer( [GHC.substitute(word,Uepsilon) for word in self.P[Var]]) for Var in self.P}
+    def cleaner(self):
+        
+        subTable= self.substitutionByEpsilon(self.epsilonGeneratorVariables())
+        newPtable={V:(self.P[V].union(subTable[V])).difference({"e",""}) for V in self.P}
+
+        return newPtable
 class GHCReduced(GHC):
     def __init__(self, grammaire):
         super().__init__(grammaire)
@@ -111,14 +136,17 @@ class GHCProper(GHC):
 class GHCChomsky(GHCReduced,GHCProper):
     def __init__(self, grammaire):
         super().__init__(grammaire)
+    
 grammaire={
 "Sigma":{"a","b"},
-"V":{"S","X","C","D"},
+"V":{"A","B","C","D"},
 "P":{
-    "S":{"aSbS","e"},
-    "X":{"e","S"}
+    "A":{"B","ab"},
+    "B":{"C","a"},
+    "C":{"D","aabD"},
+    "D":{"C"}
 },
-"S0":"S"
+"S0":"A"
 }
 G=GHC(grammaire)
 #print("generators: ",G.generatorVariables())
@@ -126,4 +154,7 @@ G=GHC(grammaire)
 #print("new",G.reduction())
 #print("epsilon generator",G.epsilonGeneratorVariables())
 #print("term",G.cleaner())
-print(GHC.substitute("aSbS","S"))
+#print(G.cleaner())
+#print(G.dependeces())
+#print(GHC.alldependants("D",G.dependeces()))
+print(G.productionOf("A"))
