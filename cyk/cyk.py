@@ -5,18 +5,24 @@ class GHC:
 
     def __init__(self,grammaire):
         self.Sigma=set(grammaire["Sigma"])
-        self.P=grammaire["P"]
+        self.P=self.getProduction(grammaire["P"])
         self.V=set(grammaire["V"])
         self.S0=grammaire["S0"]
-
+    def getProduction(self,Pdictionary):
+        P=dict()
+        for V in Pdictionary:
+            P[V]=set(Pdictionary[V].split("+"))
+        return P
     def copy(self,ghc):
-        self.Sigma=ghc.Sigma
-        self.V=ghc.V
-        self.P=ghc.P
+        self.Sigma=ghc.Sigma.copy()
+        self.V=ghc.V.copy()
+        self.P=ghc.P.copy()
         self.S0=ghc.S0
 
     def __repr__(self) -> str:
-        return str(self.__name__)+"\nSigma: "+str(self.Sigma)+"\nV: "+str(self.V)+"\nP: "+str(self.P)
+        return str(self.__name__)+"\nSigma: {"+",".join(self.Sigma)+"}"+\
+            "\nV: {"+",".join(self.V)+"}"+\
+                "\nProduction: \n"+ "\n".join([V+"---> "+"|".join(self.P[V]) for V in  self.P])
 
     def generatorVariables(self):
         U0=self.Sigma
@@ -60,7 +66,10 @@ class GHC:
             newAccesibles=set()
             if len(self.V)<len(self.Sigma):
                     newAccesibles={Var if Var in rulesfromW0 else "Nan" for Var in self.V}
-                    newAccesibles.remove("Nan")
+                    try :
+                        newAccesibles.remove("Nan")
+                    except KeyError:
+                        pass
             else:
                 for a in self.Sigma:
                     rulesfromW0=rulesfromW0.replace(a,'')
@@ -86,12 +95,12 @@ class GHC:
         return U1
 
     @staticmethod
-    def substitute(word,toSub,done=""):
+    def substituteByEpsilon(word,toSub,done=""):
         if (not len(word)):
             return {done}
         if (word[0] not in toSub):
-            return GHC.substitute(word[1:],toSub,done+word[0])
-        return GHC.substitute(word[1:],toSub,done+word[0]).union(GHC.substitute(word[1:],toSub,done))
+            return GHC.substituteByEpsilon(word[1:],toSub,done+word[0])
+        return GHC.substituteByEpsilon(word[1:],toSub,done+word[0]).union(GHC.substituteByEpsilon(word[1:],toSub,done))
 
 
     def dependeceDictionary(self):
@@ -108,7 +117,7 @@ class GHC:
                 if alpha in self.V:
                     directDpendants[alpha].add(Var)
         for Var in self.P:
-            allDependances[Var]=GHC.alldependants(Var,directDpendants)
+            allDependances[Var]=GHC.alldependants(Var,directDpendants,set().copy())
         """ removing primitives variables"""
         for Var in list(allDependances):
             if allDependances[Var]==set():
@@ -117,7 +126,8 @@ class GHC:
 
 
     @staticmethod
-    def alldependants(Var,directDependants,dependants=set()):
+    def alldependants(Var,directDependants,dependants=set().copy()):
+        assert Var in directDependants,"Maybe you forgot to add %s to you Variables"%(Var)
         """ compute all dependants (ie Variables primitives) of a givven Var"""
         dependants.add(Var)
         newDependants=GHC.unionReducer([directDependants[D] for D in dependants]).difference(dependants)
@@ -128,6 +138,7 @@ class GHC:
 
 
     def productionOf(self,Var,done=set()):
+        assert Var in self.V, "Rectifier la liste des variable pour contenir %s"%(Var)
         """Compute the non Variable production of each Variable """
         if Var not in self.P:
             return set()
@@ -135,9 +146,9 @@ class GHC:
         return self.P[Var].difference(self.V).union(GHC.unionReducer([self.productionOf(D,done) for D in self.P[Var].intersection(self.V).difference(done)]))
     
     
-    def substitutionByEpsilon(self,Uepsilon):
+    def substituteAll(self,Uepsilon):
         """Return a dictionary {Var: new set substitued} for each Var in V"""
-        return {Var:GHC.unionReducer( [GHC.substitute(word,Uepsilon) for word in self.P[Var]]) for Var in self.P}
+        return {Var:GHC.unionReducer( [GHC.substituteByEpsilon(word,Uepsilon) for word in self.P[Var]]) for Var in self.P}
     
     def selectMAx(dictionary):
         """ key who has the max of values and remove it"""
@@ -152,26 +163,24 @@ class GHC:
 class GHCReduced(GHC):
     __name__="GHC Reduite"
     def __init__(self, ghc):
-        super().__init__(GHCReduced.reductionGrammar(ghc))
-    @staticmethod
-    def reductionGrammar(ghc):
-        Rgrammaire=dict()
-        Rgrammaire["Sigma"]=ghc.Sigma
-        Rgrammaire["S0"]=ghc.S0
-        Rgrammaire["V"]=ghc.accessiblesVariables().intersection(ghc.generatorVariables())
-        Rgrammaire["P"]=dict()
-        acceptedAlphabet=ghc.Sigma.union(Rgrammaire["V"])
+        super().copy(ghc)
+        self.reduction()
+
+    def reduction(self):
+        V=self.accessiblesVariables().intersection(self.generatorVariables())
+        P=dict()
+        acceptedAlphabet=self.Sigma.union(V)
         """Elimination of word that containe an unccessible or an non generator variable """
-        for Var in set(ghc.P).intersection(Rgrammaire["V"]):
-            destinations={word if GHC.isIn(word,acceptedAlphabet) else 1 for word in ghc.P[Var]}
+        for Var in set(self.P).intersection(V):
+            destinations={word if GHC.isIn(word,acceptedAlphabet) else 1 for word in self.P[Var]}
             try :
                 destinations.remove(1)
             except KeyError:
                 pass
             if (len(destinations)):
-                Rgrammaire["P"][Var]=destinations
-        return Rgrammaire
-    
+                P[Var]=destinations
+        self.V=V
+        self.P=P    
 
 class GHCPropre(GHC):
     __name__="GHC Propre"
@@ -184,7 +193,7 @@ class GHCPropre(GHC):
 
     def removeEpsilons(self):
         Uepsilon=self.epsilonGeneratorVariables()
-        self.P=self.substitutionByEpsilon(Uepsilon)
+        self.P=self.substituteAll(Uepsilon)
         for V in Uepsilon:
                 self.P[V]=self.P[V].difference({"e",""})
 
@@ -202,17 +211,18 @@ class GHCChomsky(GHCReduced,GHCPropre):
         propre=GHCPropre(ghc)
         reduite=GHCReduced(propre)
         self.copy(reduite)
+        self.normalisation()
 
     def cyk(self,word):
         assert GHC.isIn(word,self.Sigma),"word %s not in alphabet %s"%(word,str(self.Sigma))
         n=len(word)
-        T=pd.DataFrame([[set()]*n]*n)
+        T=pd.DataFrame([[list() for _ in range(n)] for _ in range(n)] )
         for i,wi in enumerate(word):
-            Tii=set()
-            for A in self.V:
+            Tii=[]
+            for A in self.P:
                 if wi in self.P[A]:
-                    Tii.add(A)
-            T[i][i]=T[i][i].union(Tii)
+                    Tii.append(A)
+            T[i][i].extend(Tii)
         
         for j in range(n):
             for i in reversed(range(j)):
@@ -221,21 +231,59 @@ class GHCChomsky(GHCReduced,GHCPropre):
                         for B in T[i][k]:
                             for C in T[k+1][j]:
                                 if B+C in self.P[A]:
-                                    T[i][j].add(A)
-        T[0][n-1]=str(T[0][n-1])+"*"
-        print("Analysis Table of the word: ",word,"\n",T.transpose())
+                                    T[i][j].append(A)
+        for i in range(n):
+            for j in range(n):
+                T[i][j]=set(T[i][j])
+        T.to_html("cyk_nalyse.html")
+        print("Analysis Table of the word %s :\n"%(word),T.transpose())
+
+    def normalisation(self):
+        self.substituteByNewVAriables()
+        self.devidedRules()
     
+    def substituteByNewVAriables(self):
+        m=max([ord(A) for A in self.V])
+        sigma=sorted(self.Sigma)
+        translateDictionary={ord(a):i+m+1 for i,a in enumerate(sigma) }
+        self.V=self.V.union(set([chr(V) for V in translateDictionary.values()]))
+        for V in self.P:
+            self.P[V]=set([word.translate(translateDictionary) for word in  self.P[V]])
+        for i,a in enumerate(sigma):
+            self.P[chr(i+m+1)]=set([a])
+            self.V.add(chr(i+m+1))
+
+
+    def devidedRules(self):
+        m0=max([ord(A) for A in self.V])
+        m=m0
+        dividedRules=dict()
+        for V in self.P:
+            for w in list(self.P[V]):
+                n=len(w)
+                if n>2:
+                    s=n-2
+                    division={chr(i+m):{w[i+1]+chr(i+m+1)} for i in range(s-1)}
+                    division.update({chr(m+s):{w[-2:]}})
+                    self.P[V].remove(w)
+                    self.P[V]=self.P[V].union({w[0]+chr(m+1)})
+                    m+=s
+                    dividedRules.update(division)
+        self.P.update(dividedRules)
+        self.V=self.V.union({chr(m0+i+1) for i in range(m-m0)})
+
 grammaire={
-"Sigma":"abcd",
-"V":"ABCS",
+"Sigma":"ahmad",
+"V":"ABC",
 "P":{
-    "S":{"a","B"},
-    "B":{"b","bC","C"},
-    "C":{"cd","c",'d'}
+    "A":"ahB+ad",
+    "B":"mA",
+    "C":"d"
 },
-"S0":"S"
+"S0":"A"
 }
 G=GHC(grammaire)
+print(G)
 chomsky=GHCChomsky(G)
 print(chomsky)
-chomsky.cyk("abcd")
+chomsky.cyk("ahmad")
