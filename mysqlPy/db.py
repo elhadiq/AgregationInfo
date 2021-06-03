@@ -1,5 +1,5 @@
-import codecs
 import mysql.connector
+from mysql.connector.errors import InterfaceError
 from mysql.connector.fabric import connect
 def se_connecter():
     connection=mysql.connector.connect(
@@ -46,7 +46,7 @@ dataEmp=[
 (7698,'JAOUAD','MANAGER',7839, '2006/05/01',2850,None,30),
 (7782,'MOHAMED','MANAGER',7839, '2006/06/09',2450,None,10),
 (7566,'ABDELKARIM','MANAGER',7839,'2006/04/02',2975,None,20),
-(7654,'IDRISS','VENDEUR',7698, '2006/09/28',1250,1400,30),
+(7654,'IDRISS','VENDEUR',7698, '2006/09/28',1250,100,30),
 (7499,'KAMAL','VENDEUR',7698,'2006/02/20',1600,300,30),
 (7844,'TOURIYA','VENDEUR',7698,'2006/09/08',1500,0,30),
 (7900,'SANA','SECRITAIRE',7698,'2006/12/03', 950,None,30),
@@ -75,14 +75,24 @@ def dropTables(connection):
 def affiche_employe(connection,NE):
     cursor=connection.cursor()
     print("select * from emp where NE={}".format(NE))
-    cursor.execute("select * from emp INNER JOIN dept on emp.ND=dept.ND where NE={}".format(NE))
-    print(cursor.fetchall())
+    try:
+        cursor.execute("select * from emp INNER JOIN dept on emp.ND=dept.ND where NE={}".format(NE))
+        print(cursor.fetchall())
+    except InterfaceError:
+        print("PAS de resultat pour cette requette")
     cursor.close()
-connection=se_connecter()
-dropTables(connection)
-creationTables(connection)
-insertionToDept(connection,dataDept)
-insertIntoEmp(connection,dataEmp)
-affiche_employe(connection,7900)
-connection.commit()
-connection.close()
+#dropTables(connection)
+#creationTables(connection)
+#insertionToDept(connection,dataDept)
+#insertIntoEmp(connection,dataEmp)
+#affiche_employe(connection,7900)
+
+def executeRequete(connextion,sql):
+    cursor=connextion.cursor()
+    cursor.execute(sql)
+    try:
+        for row in cursor.fetchall():
+            print(row)
+    except InterfaceError:
+        print("PAS de resultat pour cette requette")
+    cursor.close()
