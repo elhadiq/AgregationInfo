@@ -87,9 +87,10 @@ def affiche_employe(connection,NE):
 #insertIntoEmp(connection,dataEmp)
 #affiche_employe(connection,7900)
 
-def executeRequete(connextion,sql):
+def executeRequete(connextion,sql,message=""):
     cursor=connextion.cursor()
     cursor.execute(sql)
+    print(message)
     try:
         for row in cursor.fetchall():
             print(row)
