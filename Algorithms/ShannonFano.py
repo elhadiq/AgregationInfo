@@ -34,9 +34,9 @@ def affectBits(srtList,codageDict):
     else:
         g,d=divide(srtList)
         for C,_ in g:
-            codageDict[C]="0"+codageDict[C]
+            codageDict[C]=codageDict[C]+"0"
         for C,_ in d:
-            codageDict[C]="1"+codageDict[C]
+            codageDict[C]=codageDict[C]+"1"
         affectBits(d,codageDict)
         affectBits(g,codageDict)
 def shanonFanon(message):
