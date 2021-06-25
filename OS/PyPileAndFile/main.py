@@ -1,0 +1,47 @@
+import Pile as Pile
+import File as File
+
+print("Test Pile")
+p = Pile.Pile()
+print(p)
+print("LE pile est-il vide: {}".format(p.estVide()))
+for i in range(5):
+    p.empiler(i)
+print("Affichage pile")
+print(p)
+print("Depiler")
+p.depiler()
+print("Affichage apres depiler")
+print(p)
+print("LE pile est-il vide: {}".format(p.estVide()))
+print("Depiler K element K=2")
+p.depilerKElet(2)
+print(p)
+print("Fonction DepilerELT(1)")
+p.depilerElt(1)
+print(p)
+print("Le pile contient-t-il 0 : {}".format(p.contient(0)))
+print("Le pile contient-t-il 0 : {}".format(p.contient(20)))
+
+##########################################
+
+print("Test File")
+f = File.File()
+print(f)
+print("La file est-il vide: {}".format(f.estVide()))
+for i in range(5):
+    f.emfiler(i)
+print("Affichage file")
+print(f)
+print("Defiler")
+f.defiler()
+print("Affichage apres defiler")
+print(f)
+print("La file est-il vide: {}".format(f.estVide()))
+print(f)
+print("Fonction DefilerELT(1)")
+f.defiletElt(1)
+print(f)
+print("Inverser File")
+f.inverser()
+print(f)
