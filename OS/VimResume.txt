@@ -1,0 +1,104 @@
+########## Vim Commandes ##########
+
+
+---Insertion comandes---
+	i:insert befor cursor
+	I:Insert at the begining of the line
+	a:insert after ursor
+	A:insert at the end of the line
+	o:insert in new line in the buttom of the current line
+	O:insert in new line on the top of the current line
+	r:replace the cursor letter
+	R: Replace all letter in the current line
+
+
+--Suppressions and Edition Commandes-----:
+	x:suppresion the current letter on cursor
+	X:suppression a letter befor the cursor
+	dd:sppresion the entire line
+	yy:copy the entire current line to the buffer
+	p:past the entire line of the buffer after the current line
+	P:past the entire line of the buffer befor the current line
+	u:undo the last commande
+	.:apply the last commande again
+
+
+---File Manipulation----:
+	:w -> save the changes
+	:q -> quit without saving
+	:q! -> quit without saving forced
+	:wq -> save and quit
+	:x -> the same as :wq
+---Research Commandes-----
+	/text: Research <text> from the current to the buttom
+	n : reasearch the next from the current to the buttom
+	?text: Research <text> from th current to the top
+	N : reasearch the previous from the current to the top
+
+-----How to change Modes-----
+	<escape>:mode commande vim
+	i,a,o+[maj]:mode insertion
+	:!  : mode commande unix
+
+### Le shell bash
+question:) What is the diffrence between bash, teriminal, and shell?
+
+
+
+####Operating system###########
+
+	##########Les entres sorties#####
+	------Le Mode programmé-----
+	*)Une unité d'echange (Registre d'etat, Registre de donnes, Registre de C)
+	*)LA machine centrale contien les donnes 
+	*)Le processeur lire tjrs le registre de l'etat, si il est pret il transfert les donnes de 		la memoir vesr le registre des donnes.
+	*) il ya des donnes dans le registre des donnes ==> le registre d'etat n'est pas pret
+	*)Tjrs scrutation du registre par le processeur.
+	------Le mode intréption----
+	*)L'unité Echange lance une interruption au processeur, pour indiquer qu'il est pret a recevoir les donnes.	
+	*)Le processeur lance la routine qui lit ou ecrit les donnes dans la RD
+	*) Le processeur gere les E/S
+	------Direct access Memory------
+	*)Le DMA est un controleur qui permet aux unités des echanges d'acceder directement à la mémoir centrale, sans intervention du cpu.
+	*)Quatre registres: 
+			i)Nombre d'octes à transferer
+			ii)@du promier octet 
+			iii)sens de l'opération
+			iv)@du périphérique connecté.
+
+
+#####File system###########
+Linux is a Unix like, a file oriented system
+All is represented a files: data, prefhri
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
