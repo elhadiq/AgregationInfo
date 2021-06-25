@@ -272,19 +272,19 @@ class GHCChomsky(GHCReduced,GHCPropre):
                     dividedRules.update(division)
         self.P.update(dividedRules)
         self.V=self.V.union({chr(m0+i+1) for i in range(m-m0)})
-
-grammaire={
-"Sigma":"ahmad",
-"V":"ABC",
-"P":{
-    "A":"ahB+ad",
-    "B":"mA",
-    "C":"d"
-},
-"S0":"A"
-}
-G=GHC(grammaire)
-print(G)
-chomsky=GHCChomsky(G)
-print(chomsky)
-chomsky.cyk("ahmad")
+if __name__ == "__main__":
+    grammaire={
+    "Sigma":"ahmad",
+    "V":"ABC",
+    "P":{
+        "A":"ahB+ad",
+        "B":"mA",
+        "C":"d"
+    },
+    "S0":"A"
+    }
+    G=GHC(grammaire)
+    print(G)
+    chomsky=GHCChomsky(G)
+    print(chomsky)
+    chomsky.cyk("ahmad")
