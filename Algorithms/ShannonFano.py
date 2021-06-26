@@ -9,7 +9,7 @@ def compterOccurences(message):
     return NbOccurences
 
 
-trierParOccurences =lambda NbOccurences:sorted(NbOccurences.items(), key=lambda tup: tup[1])
+trierParOccurences =lambda NbOccurences,i:sorted(NbOccurences.items(), key=lambda tup: tup[i])
 
 
 initialisationsCodes=lambda NbOccurences:{A:"" for A in NbOccurences}
@@ -52,14 +52,14 @@ def affectBits(srtList,codageDict):
 
 def shanonFanon(message):
     NbOccurences=compterOccurences(message)
-    srt=trierParOccurences(NbOccurences)
+    srt=trierParOccurences(NbOccurences,1)
     codageDict=initialisationsCodes(NbOccurences)
     affectBits(srt,codageDict)
     codedMessage="".join([codageDict[C] for C in message])
     return codedMessage,codageDict
 
 
-def decoderShanonFanon(codedMessage,codageDict):
+def decoder(codedMessage,codageDict):
     message=""
     bande=codedMessage[:]
     decodeDict={codageDict[C]:C for C in codageDict}
@@ -81,4 +81,4 @@ def decoderShanonFanon(codedMessage,codageDict):
 if __name__=='__main__':
     message="INFORMATION RESEAUX ET COMMUNICATIONS"
     codedMessage,codageDict=shanonFanon(message)
-    print(decoderShanonFanon(codedMessage,codageDict))
+    print(decoder(codedMessage,codageDict))
