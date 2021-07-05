@@ -12,7 +12,7 @@ def coinChangingNaive(Coins,Somme,i=None):
         return 1 if Somme==Coins[0] else math.inf
     return min(coinChangingNaive(Coins,Somme,i-1),coinChangingNaive(Coins,Somme-Coins[i],i)+1)
 
-def coinChangingNaiveDynamique(Coins,Somme,cash=dict(),i=None):
+def coinChangingDynamique(Coins,Somme,cash=dict(),i=None):
     if i is None:
         i=len(Coins)-1
     if Somme in cash:
@@ -27,11 +27,11 @@ def coinChangingNaiveDynamique(Coins,Somme,cash=dict(),i=None):
     if i==0:
         nb=1 if Somme==Coins[0] else math.inf
     else:
-        nb= min(coinChangingNaiveDynamique(Coins,Somme,cash,i-1),coinChangingNaiveDynamique(Coins,Somme-Coins[i],cash,i)+1)
+        nb= min(coinChangingDynamique(Coins,Somme,cash,i-1),coinChangingDynamique(Coins,Somme-Coins[i],cash,i)+1)
     cash[Somme]=nb
     return nb
 
-def coinChangingNaiveDynamiqueSollutions(Coins,Somme,cash=dict(),i=None):
+def coinChangingDynamiqueSollutions(Coins,Somme,cash=dict(),i=None):
     if i is None:
         i=len(Coins)-1
     if Somme in cash:
@@ -46,8 +46,8 @@ def coinChangingNaiveDynamiqueSollutions(Coins,Somme,cash=dict(),i=None):
     if i==0:
         nb=[1,[Coins[0]]] if Somme==Coins[0] else [math.inf,[]]
     else:
-        path1=coinChangingNaiveDynamiqueSollutions(Coins,Somme,cash,i-1)
-        path2=coinChangingNaiveDynamiqueSollutions(Coins,Somme-Coins[i],cash,i)
+        path1=coinChangingDynamiqueSollutions(Coins,Somme,cash,i-1)
+        path2=coinChangingDynamiqueSollutions(Coins,Somme-Coins[i],cash,i)
         path2[0]=path2[0]+1
         path2[1]=path2[1]+[Coins[i]]
         nb=path1 if path1[0]<path2[0] else path2
@@ -56,10 +56,12 @@ def coinChangingNaiveDynamiqueSollutions(Coins,Somme,cash=dict(),i=None):
 
 Coins=[4,3,1]
 Somme=10
-# now=time.time()
-# print(coinChangingNaive(Coins,Somme))
-# print("time naive=",time.time()-now)
-# now=time.time()
-# print(coinChangingNaiveDynamique(Coins,Somme))
-# print("time dynamique=",time.time()-now)
-print(coinChangingNaiveDynamiqueSollutions(Coins,Somme))
+now=time.time()
+print(coinChangingNaive(Coins,Somme))
+print("time naive=",time.time()-now)
+now=time.time()
+print(coinChangingDynamique(Coins,Somme))
+print("time dynamique=",time.time()-now)
+now=time.time()
+print(coinChangingDynamiqueSollutions(Coins,Somme))
+print("time dynamique with sollutions=",time.time()-now)
