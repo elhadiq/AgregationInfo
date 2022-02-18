@@ -1,6 +1,5 @@
 import mysql.connector
 from mysql.connector.errors import InterfaceError
-from mysql.connector.fabric import connect
 def se_connecter():
     connection=mysql.connector.connect(
     host = "localhost " ,
